@@ -178,7 +178,7 @@ pub(crate) fn popup_focus_for_screen(
     None
 }
 
-fn fullscreen_hit_blocks_non_overlay_layers(
+fn fullscreen_hit_blocks_layer_shell(
     st: &mut Halley,
     ws_w: i32,
     ws_h: i32,
@@ -215,8 +215,9 @@ pub(crate) fn layer_surface_focus_for_screen(
     smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
     Point<f64, Logical>,
 )> {
-    let block_non_overlay =
-        fullscreen_hit_blocks_non_overlay_layers(st, ws_w, ws_h, sx, sy, now, resize_preview);
+    if fullscreen_hit_blocks_layer_shell(st, ws_w, ws_h, sx, sy, now, resize_preview) {
+        return None;
+    }
 
     let mut placements = crate::compositor::monitor::layer_shell::layer_shell_placements(
         st,
@@ -232,16 +233,6 @@ pub(crate) fn layer_surface_focus_for_screen(
     });
 
     for placement in placements {
-        if block_non_overlay
-            && !matches!(
-                placement.layer,
-                smithay::wayland::shell::wlr_layer::Layer::Top
-                    | smithay::wayland::shell::wlr_layer::Layer::Overlay
-            )
-        {
-            continue;
-        }
-
         for (popup, popup_offset) in popups_top_to_bottom(st, &placement.wl_surface) {
             let popup_geo = popup.geometry();
             let (popup_origin_x, popup_origin_y) = clamp_layer_popup_origin(
@@ -280,6 +271,13 @@ pub(crate) fn layer_surface_focus_for_screen(
         else {
             continue;
         };
+        if matches!(placement.layer, smithay::wayland::shell::wlr_layer::Layer::Background)
+            && !crate::compositor::monitor::layer_shell::layer_surface_blocks_desktop_hover(
+                st, &surface,
+            )
+        {
+            continue;
+        }
         let focus_origin = Point::<f64, Logical>::from((
             (placement.origin.x + surface_loc.x) as f64,
             (placement.origin.y + surface_loc.y) as f64,

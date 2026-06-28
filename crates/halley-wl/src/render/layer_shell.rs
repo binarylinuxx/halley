@@ -102,6 +102,14 @@ pub(crate) fn collect_layer_surfaces(
     for placement in
         crate::compositor::monitor::layer_shell::layer_shell_placements(st, logical_size)
     {
+        if st
+            .model
+            .fullscreen_state
+            .fullscreen_active_node
+            .contains_key(&st.model.monitor_state.current_monitor)
+        {
+            continue;
+        }
         let elements = render_elements_from_surface_tree(
             renderer,
             &placement.wl_surface,
