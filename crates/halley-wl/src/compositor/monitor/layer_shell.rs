@@ -746,7 +746,11 @@ fn layer_shell_surfaces_sorted(st: &Halley) -> Vec<LayerSurface> {
             .position(|surface_id| surface_id == &id)
             .unwrap_or(usize::MAX);
         let data = layer_cached_state(surface);
-        (layer_depth(data.layer), layer_reservation_priority(data), order)
+        (
+            layer_depth(data.layer),
+            layer_reservation_priority(data),
+            order,
+        )
     });
     surfaces
 }
